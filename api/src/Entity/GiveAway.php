@@ -13,11 +13,10 @@ use Doctrine\ORM\Mapping as ORM;
     "post" => [
         "messenger" => "input",
         "input" => GiveAwayCreateRequest::class,
-//        "messenger" => true,
-        "output" => false,
-        "status" => 202,
-    ]
-])]
+    ],
+    'get'],
+    itemOperations:['get', 'post']
+)]
 class GiveAway
 {
     #[ORM\Id]
