@@ -3,19 +3,14 @@
 namespace App\Entity;
 
 use ApiPlatform\Core\Annotation\ApiResource;
-use App\Message\GiveAwayCreateRequest;
 use App\Repository\GiveAwayRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: GiveAwayRepository::class)]
-#[ApiResource(collectionOperations: [
-    "post" => [
-        "messenger" => "input",
-        "input" => GiveAwayCreateRequest::class,
-    ],
-    'get'],
-    itemOperations:['get', 'post']
+#[ApiResource(
+    collectionOperations: ["get"],
+    itemOperations: [ "get", "post" ]
 )]
 class GiveAway
 {
@@ -30,6 +25,9 @@ class GiveAway
     #[ORM\ManyToOne(targetEntity: Participant::class)]
     #[ORM\JoinColumn(nullable: false)]
     private $winner;
+
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private $notified_at;
 
     public function __construct()
     {
@@ -61,6 +59,18 @@ class GiveAway
     public function setWinner(?Participant $winner): self
     {
         $this->winner = $winner;
+
+        return $this;
+    }
+
+    public function getNotifiedAt(): ?\DateTimeImmutable
+    {
+        return $this->notified_at;
+    }
+
+    public function setNotifiedAt(?\DateTimeImmutable $notified_at): self
+    {
+        $this->notified_at = $notified_at;
 
         return $this;
     }
