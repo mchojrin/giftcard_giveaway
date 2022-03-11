@@ -8,55 +8,77 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class Client
 {
     public const GRANT_TYPE = 'client_credentials';
+    public const SANDBOX_MODIFIER = '-sandbox';
+    const OAUTH_TOKEN_ENDPOINT = 'https://auth.reloadly.com/oauth/token';
+    const SEND_GIFTCARD_ENDPOINT = '/orders';
+    const HTTP_ACCEPT_HEADER = 'application/com.reloadly.giftcards-v1+json';
+
     private HttpClientInterface $httpClient;
     private string $accessToken;
-    private string $clientId;
-    private string $secret;
+    private string $baseUrl;
+    private Configuration $configuration;
 
-    public function __construct(HttpClientInterface $httpClient, string $clientId, string $secret)
+    public function __construct(HttpClientInterface $httpClient, Configuration $configuration)
     {
         $this->httpClient = $httpClient;
-        $this->clientId = $clientId;
-        $this->secret = $secret;
+        $this->configuration = $configuration;
+        $this->baseUrl = 'https://giftcards' . ($configuration->isSandbox() ? self::SANDBOX_MODIFIER : '') . '.reloadly.com';
     }
 
-    public function sendGiftCard(string $email)
+    public function sendGiftCardTo(string $email)
     {
         if (empty($this->accessToken)) {
             $this->accessToken = $this->getAccessToken();
         }
 
-        $this->purchaseGiftCard();
+        $this->purchaseGiftCardFor($email);
     }
 
     private function getAccessToken(): string
     {
         $data = [
-            'client_id' => $this->clientId,
-            'client_secret' => $this->secret,
+            'client_id' => $this->configuration->getClientId(),
+            'client_secret' => $this->configuration->getSecret(),
             'grant_type' => self::GRANT_TYPE,
-            'audience' => 'https://giftcards.reloadly.com'
+            'audience' => $this->baseUrl,
         ];
 
         $response = $this->httpClient
-            ->request('POST', 'https://auth.reloadly.com/oauth/token',
-            [
-                'body' => json_encode($data),
-                'headers' => [
-                    'Content-Type: application/json',
-                ]
-            ])
-            ;
+            ->request('POST', self::OAUTH_TOKEN_ENDPOINT,
+                [
+                    'body' => json_encode($data),
+                    'headers' => [
+                        'Content-Type: application/json',
+                    ]
+                ]);
         if (200 != $response->getStatusCode()) {
 
-            throw new Exception('Couldn\'t obtain an access token: '.$response->getContent());
+            throw new Exception('Couldn\'t obtain an access token: ' . $response->getContent());
         }
 
-        return $response->getContent();
+        $responseElements = json_decode($response->getContent(), true);
+
+        return $responseElements['access_token'];
     }
 
-    private function purchaseGiftCard() : void
+    private function purchaseGiftCardFor(string $recipientEmail): void
     {
+        $data = [
+            "productId" => $this->configuration->getProductId(),
+            "quantity" => 1,
+            "unitPrice" => $this->configuration->getUnitPrice(),
+            "senderName" => $this->configuration->getSenderName(),
+            "recipientEmail" => $recipientEmail,
+        ];
 
+        $response = $this->httpClient
+            ->request('POST', $this->baseUrl . self::SEND_GIFTCARD_ENDPOINT, [
+                'headers' => [
+                    'Authorization: Bearer ' . $this->accessToken,
+                    'Content-Type: application/json',
+                    'Accept: ' . self::HTTP_ACCEPT_HEADER
+                ],
+                'body' => json_encode($data),
+            ]);
     }
 }
