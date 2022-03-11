@@ -2,7 +2,10 @@
 
 namespace App\Command;
 
+use App\Entity\GiveAway;
 use App\Reloadly\Client;
+use DateTimeImmutable;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -34,10 +37,33 @@ class SendGiftcardCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $this->client->sendGiftCardTo('mchojrin@gmail.com');
+        $availableGiveAways = $this->getAvailableGiveAways();
+
+        foreach ($availableGiveAways as $giveAway) {
+            $winnerEmail = $giveAway->getWinner()->getEmail();
+            $this->client->sendGiftCardTo($winnerEmail);
+            $io->writeln('Giftcard sent to '.$winnerEmail);
+            $this->markAsSent($giveAway);
+        }
+
+        $this->entityManager->flush();
 
         $io->success('Giftcards sent!');
 
         return Command::SUCCESS;
+    }
+
+    private function getAvailableGiveAways() : array
+    {
+        return $this->entityManager->getRepository(GiveAway::class)
+            ->findBy([
+                'notified_at' => null,
+            ])
+            ;
+    }
+
+    private function markAsSent(GiveAway $giveAway) : void
+    {
+        $giveAway->setNotifiedAt(new DateTimeImmutable());
     }
 }
