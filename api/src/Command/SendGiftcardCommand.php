@@ -34,9 +34,9 @@ class SendGiftcardCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $this->client->sendGiftCard('mchojrin@gmail.com');
+        $this->client->sendGiftCardTo('mchojrin@gmail.com');
 
-        $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
+        $io->success('Giftcards sent!');
 
         return Command::SUCCESS;
     }
