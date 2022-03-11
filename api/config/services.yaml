@@ -23,5 +23,12 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
-    App\Reloadly\Client:
-        arguments: { $clientId: '%env(resolve:RELOADLY_CLIENT_ID)%', $secret: '%env(resolve:RELOADLY_SECRET)%' }
+    
+    App\Reloadly\Configuration:
+        arguments: 
+            $clientId: '%env(resolve:RELOADLY_CLIENT_ID)%'
+            $secret: '%env(resolve:RELOADLY_SECRET)%'
+            $sandbox: '%env(resolve:RELOADLY_SANDBOX)%'
+            $productId: '%env(resolve:RELOADLY_GIFTCARD_PRODUCT_ID)%'
+            $senderName: '%env(resolve:RELOADLY_GIFTCARD_SENDER_NAME)%'
+            $unitPrice: '%env(resolve:RELOADLY_GIFTCARD_UNIT_PRICE)%'
